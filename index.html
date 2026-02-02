@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rainbow Snake Adventure</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background stars */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 90% 60%, white, transparent),
+                radial-gradient(1px 1px at 33% 80%, white, transparent);
+            background-size: 200px 200px, 300px 300px, 250px 250px, 400px 400px, 350px 350px, 180px 180px;
+            background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 250px 150px, 180px 80px;
+            animation: twinkle 100s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes twinkle {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-100px, -100px); }
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5rem;
+            color: #ffd700;
+            text-shadow: 
+                3px 3px 0 #ff6b6b,
+                6px 6px 0 #4ecdc4,
+                9px 9px 0 #95e1d3,
+                12px 12px 20px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            animation: titleFloat 3s ease-in-out infinite;
+            letter-spacing: 2px;
+        }
+
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .game-container {
+            background: linear-gradient(145deg, #fef9e7 0%, #fdebd0 50%, #fadbd8 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.4),
+                inset 0 2px 10px rgba(255,255,255,0.3),
+                0 0 0 8px #ff6b6b,
+                0 0 0 12px #ffd700;
+            position: relative;
+            margin: 20px;
+        }
+
+        #gameCanvas {
+            border: 6px solid #2d4059;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
+            box-shadow: 
+                inset 0 4px 8px rgba(0,0,0,0.1),
+                0 4px 12px rgba(0,0,0,0.2);
+            cursor: default;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .score-display {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem;
+            color: #2d4059;
+            margin-top: 20px;
+            text-shadow: 2px 2px 0 rgba(255,215,0,0.3);
+            display: block;
+        }
+
+        .start-screen, .game-over-screen, .settings-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 50px 60px;
+            border-radius: 30px;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.5),
+                inset 0 2px 20px rgba(255,255,255,0.8),
+                0 0 0 10px #ffd700,
+                0 0 0 15px #ff6b6b;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .start-screen h2, .game-over-screen h2, .settings-screen h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.8rem;
+            color: #ff6b6b;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0 rgba(78, 205, 196, 0.3);
+        }
+
+        .start-screen p, .settings-screen p {
+            font-size: 1.1rem;
+            color: #2d4059;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .game-over-screen .final-score {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: #4ecdc4;
+            margin: 20px 0;
+        }
+
+        .game-over-screen .high-score {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem;
+            color: #ffd700;
+            margin-bottom: 30px;
+        }
+
+        button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 
+                0 6px 0 #c92a2a,
+                0 8px 20px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            margin: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 0 #c92a2a,
+                0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 0 #c92a2a,
+                0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .settings-btn {
+            background: linear-gradient(135deg, #4ecdc4 0%, #6dd5ed 100%);
+            box-shadow: 
+                0 6px 0 #2a9d8f,
+                0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .settings-btn:hover {
+            box-shadow: 
+                0 8px 0 #2a9d8f,
+                0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .settings-btn:active {
+            box-shadow: 
+                0 2px 0 #2a9d8f,
+                0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .speed-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .speed-option {
+            padding: 12px 25px;
+            background: #e9ecef;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .speed-option:hover {
+            background: #dee2e6;
+            transform: scale(1.05);
+        }
+
+        .speed-option.selected {
+            background: #ffd700;
+            border-color: #ff6b6b;
+            transform: scale(1.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .instruction {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        /* Mobile instruction */
+        .mobile-instruction {
+            display: none;
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        /* Start button for mobile */
+        .mobile-start-btn {
+            display: none;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4ecdc4 0%, #6dd5ed 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 
+                0 6px 0 #2a9d8f,
+                0 8px 20px rgba(0,0,0,0.3);
+            margin: 10px;
+        }
+
+        .mobile-start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 0 #2a9d8f,
+                0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Swipe indicator for mobile */
+        .swipe-indicator {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            color: #2d4059;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 100;
+            animation: swipePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes swipePulse {
+            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+        }
+
+        /* Show mobile controls on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .mobile-start-btn {
+                display: inline-block;
+            }
+            .instruction {
+                display: none;
+            }
+            .mobile-instruction {
+                display: block;
+            }
+            .swipe-indicator.active {
+                display: block;
+            }
+        }
+
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: particle-float 1s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">RAINBOW SNAKE</h1>
+        
+        <div class="game-container">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+            <div class="score-display">SCORE: <span id="currentScore">0</span></div>
+        </div>
+
+        <!-- Swipe Indicator for Mobile -->
+        <div class="swipe-indicator" id="swipeIndicator">
+            👆 Swipe to Move
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <h2>READY TO PLAY?</h2>
+            <p>Press and HOLD Arrow Keys to move!</p>
+            <p>Release keys to stop - but your snake will shrink!</p>
+            <p class="instruction">Press SPACE to start</p>
+            <p class="mobile-instruction">Swipe anywhere to move! Keep swiping to keep moving!</p>
+            <button class="mobile-start-btn" onclick="startGame()">START GAME</button>
+            <button class="settings-btn" onclick="showSettings()">SETTINGS</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="settings-screen hidden">
+            <h2>SETTINGS</h2>
+            <p>Choose Your Speed:</p>
+            <div class="speed-selector">
+                <div class="speed-option" onclick="selectSpeed('slow')">SLOW</div>
+                <div class="speed-option selected" onclick="selectSpeed('medium')">MEDIUM</div>
+                <div class="speed-option" onclick="selectSpeed('fast')">FAST</div>
+            </div>
+            <button onclick="backToStart()">BACK</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="game-over-screen hidden">
+            <h2>GAME OVER!</h2>
+            <div class="final-score">SCORE: <span id="finalScore">0</span></div>
+            <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
+            <button onclick="restartGame()">PLAY AGAIN</button>
+            <button class="settings-btn" onclick="showSettings()">SETTINGS</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        // Audio context for sound effects and music
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        // Game state
+        let snake = [{x: 10, y: 10}];
+        let snakeColors = [];
+        let food = {x: 15, y: 15};
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameRunning = false;
+        let direction = {x: 0, y: 0};
+        let keysPressed = {};
+        let lastMoveTime = Date.now();
+        let shrinkTimer = null;
+        let selectedSpeed = 'medium';
+        let speedMultiplier = 1;
+        let moveInterval = null;
+        
+        // Mobile swipe state
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let isSwiping = false;
+        let swipeDirection = {x: 0, y: 0};
+
+        // Color spectrum for smooth transitions
+        const colorSpectrum = [
+            '#FFD700', // Gold
+            '#FFA500', // Orange
+            '#FF6347', // Tomato
+            '#FF1493', // Deep Pink
+            '#9370DB', // Medium Purple
+            '#4169E1', // Royal Blue
+            '#00CED1', // Dark Turquoise
+            '#00FA9A', // Medium Spring Green
+            '#7FFF00', // Chartreuse
+            '#FFD700'  // Back to Gold (loop)
+        ];
+        let currentColorIndex = 0;
+        let dotsUntilColorChange = 3; // Smooth transition every 3 dots
+        let dotsEatenSinceColorChange = 0;
+
+        // Speed settings (milliseconds between moves)
+        const speedSettings = {
+            slow: 150,
+            medium: 100,
+            fast: 60
+        };
+
+        // Initialize first color
+        snakeColors.push(colorSpectrum[0]);
+
+        // Sound effects
+        function playEatSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playGameOverSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // Background music (Mario-inspired 8-bit style)
+        let musicPlaying = false;
+        function playBackgroundMusic() {
+            if (musicPlaying) return;
+            musicPlaying = true;
+
+            const notes = [
+                {freq: 659.25, duration: 0.15}, // E
+                {freq: 659.25, duration: 0.15}, // E
+                {freq: 0, duration: 0.15},      // rest
+                {freq: 659.25, duration: 0.15}, // E
+                {freq: 0, duration: 0.15},      // rest
+                {freq: 523.25, duration: 0.15}, // C
+                {freq: 659.25, duration: 0.15}, // E
+                {freq: 0, duration: 0.15},      // rest
+                {freq: 783.99, duration: 0.3},  // G
+                {freq: 0, duration: 0.3},       // rest
+                {freq: 392.00, duration: 0.3}   // G (low)
+            ];
+
+            let noteIndex = 0;
+            let startTime = audioCtx.currentTime;
+
+            function playNote() {
+                if (!gameRunning) {
+                    musicPlaying = false;
+                    return;
+                }
+
+                const note = notes[noteIndex];
+                
+                if (note.freq > 0) {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.type = 'square';
+                    oscillator.frequency.value = note.freq;
+                    
+                    gainNode.gain.setValueAtTime(0.08, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+                    
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + note.duration);
+                }
+                
+                startTime += note.duration;
+                noteIndex = (noteIndex + 1) % notes.length;
+                
+                setTimeout(playNote, note.duration * 1000);
+            }
+
+            playNote();
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !gameRunning) {
+                e.preventDefault();
+                startGame();
+                return;
+            }
+
+            if (!gameRunning) return;
+
+            // Prevent default arrow key scrolling
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+                
+                // Mark key as pressed
+                if (!keysPressed[e.code]) {
+                    keysPressed[e.code] = true;
+                    updateDirection();
+                    resetShrinkTimer();
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+                keysPressed[e.code] = false;
+                updateDirection();
+            }
+        });
+
+        // Mobile Swipe Gestures
+        const gameCanvas = document.getElementById('gameCanvas');
+        
+        gameCanvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            isSwiping = true;
+            resetShrinkTimer();
+        });
+
+        gameCanvas.addEventListener('touchmove', (e) => {
+            if (!gameRunning || !isSwiping) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            touchEndX = touch.clientX;
+            touchEndY = touch.clientY;
+            
+            handleSwipe();
+        });
+
+        gameCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isSwiping = false;
+            
+            // Stop movement when not swiping
+            swipeDirection = {x: 0, y: 0};
+            updateSwipeDirection();
+        });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Minimum swipe distance threshold
+            if (distance < 20) {
+                swipeDirection = {x: 0, y: 0};
+                updateSwipeDirection();
+                return;
+            }
+            
+            // Determine primary direction based on angle
+            const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+            
+            // Convert angle to direction (8 directions but we use 4 cardinal)
+            if (angle >= -45 && angle < 45) {
+                // Right
+                swipeDirection = {x: 1, y: 0};
+            } else if (angle >= 45 && angle < 135) {
+                // Down
+                swipeDirection = {x: 0, y: 1};
+            } else if (angle >= -135 && angle < -45) {
+                // Up
+                swipeDirection = {x: 0, y: -1};
+            } else {
+                // Left
+                swipeDirection = {x: -1, y: 0};
+            }
+            
+            updateSwipeDirection();
+        }
+
+        function updateSwipeDirection() {
+            // Don't allow reversing direction
+            if (swipeDirection.x !== 0 && direction.x !== -swipeDirection.x) {
+                direction = swipeDirection;
+            } else if (swipeDirection.y !== 0 && direction.y !== -swipeDirection.y) {
+                direction = swipeDirection;
+            } else if (swipeDirection.x === 0 && swipeDirection.y === 0) {
+                // Stop moving
+                direction = {x: 0, y: 0};
+            }
+        }
+
+        function updateDirection() {
+            // Priority: Last pressed key, but can't go opposite to current direction
+            if (keysPressed['ArrowUp'] && direction.y !== 1) {
+                direction = {x: 0, y: -1};
+            } else if (keysPressed['ArrowDown'] && direction.y !== -1) {
+                direction = {x: 0, y: 1};
+            } else if (keysPressed['ArrowLeft'] && direction.x !== 1) {
+                direction = {x: -1, y: 0};
+            } else if (keysPressed['ArrowRight'] && direction.x !== -1) {
+                direction = {x: 1, y: 0};
+            } else {
+                // No keys pressed - stop moving
+                direction = {x: 0, y: 0};
+            }
+        }
+
+        function selectSpeed(speed) {
+            selectedSpeed = speed;
+            speedMultiplier = speedSettings[speed];
+            document.querySelectorAll('.speed-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function showSettings() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('settingsScreen').classList.remove('hidden');
+        }
+
+        function backToStart() {
+            document.getElementById('settingsScreen').classList.add('hidden');
+            if (!gameRunning) {
+                document.getElementById('startScreen').classList.remove('hidden');
+            }
+        }
+
+        function startGame() {
+            // Resume audio context
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('settingsScreen').classList.add('hidden');
+            
+            snake = [{x: 10, y: 10}];
+            snakeColors = [colorSpectrum[0]];
+            direction = {x: 0, y: 0};
+            keysPressed = {};
+            swipeDirection = {x: 0, y: 0};
+            score = 0;
+            currentColorIndex = 0;
+            dotsEatenSinceColorChange = 0;
+            document.getElementById('currentScore').textContent = score;
+            spawnFood();
+            gameRunning = true;
+            playBackgroundMusic();
+            resetShrinkTimer();
+            
+            // Show swipe indicator for touch devices
+            if ('ontouchstart' in window) {
+                document.getElementById('swipeIndicator').classList.add('active');
+                // Hide indicator after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('swipeIndicator').classList.remove('active');
+                }, 3000);
+            }
+            
+            // Start game loop with interval based on speed
+            if (moveInterval) clearInterval(moveInterval);
+            moveInterval = setInterval(moveSnake, speedSettings[selectedSpeed]);
+            
+            drawGame();
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function spawnFood() {
+            let validPosition = false;
+            while (!validPosition) {
+                food.x = Math.floor(Math.random() * tileCount);
+                food.y = Math.floor(Math.random() * tileCount);
+                
+                // Check if food spawns on snake
+                validPosition = !snake.some(segment => segment.x === food.x && segment.y === food.y);
+            }
+        }
+
+        function resetShrinkTimer() {
+            if (shrinkTimer) {
+                clearTimeout(shrinkTimer);
+            }
+            shrinkTimer = setTimeout(() => {
+                if (gameRunning && direction.x === 0 && direction.y === 0 && snake.length > 1) {
+                    shrinkSnake();
+                }
+            }, 2000);
+        }
+
+        function shrinkSnake() {
+            if (snake.length > 1) {
+                snake.pop();
+                snakeColors.pop();
+                if (score > 0) {
+                    score--;
+                    document.getElementById('currentScore').textContent = score;
+                }
+            }
+            if (gameRunning && direction.x === 0 && direction.y === 0) {
+                resetShrinkTimer();
+            }
+        }
+
+        function moveSnake() {
+            if (!gameRunning) return;
+
+            // If not moving, just redraw and return
+            if (direction.x === 0 && direction.y === 0) {
+                drawGame();
+                return;
+            }
+
+            const head = snake[0];
+            let newX = head.x + direction.x;
+            let newY = head.y + direction.y;
+
+            // Wrap around screen
+            if (newX < 0) newX = tileCount - 1;
+            if (newX >= tileCount) newX = 0;
+            if (newY < 0) newY = tileCount - 1;
+            if (newY >= tileCount) newY = 0;
+
+            // Check collision with self
+            if (snake.some(segment => segment.x === newX && segment.y === newY)) {
+                gameOver();
+                return;
+            }
+
+            // Add new head
+            snake.unshift({x: newX, y: newY});
+            snakeColors.unshift(snakeColors[0]); // Copy head color
+
+            // Check food collision
+            if (newX === food.x && newY === food.y) {
+                score++;
+                document.getElementById('currentScore').textContent = score;
+                playEatSound();
+                createParticles(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2);
+                
+                // Update color
+                dotsEatenSinceColorChange++;
+                if (dotsEatenSinceColorChange >= dotsUntilColorChange) {
+                    currentColorIndex = (currentColorIndex + 1) % (colorSpectrum.length - 1);
+                    dotsEatenSinceColorChange = 0;
+                }
+                snakeColors[0] = colorSpectrum[currentColorIndex];
+                
+                spawnFood();
+            } else {
+                // Remove tail
+                snake.pop();
+                snakeColors.pop();
+            }
+
+            drawGame();
+        }
+
+        function createParticles(x, y) {
+            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#95E1D3'];
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + canvas.offsetLeft + 'px';
+                particle.style.top = y + canvas.offsetTop + 'px';
+                particle.style.width = '8px';
+                particle.style.height = '8px';
+                particle.style.borderRadius = '50%';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const angle = (Math.PI * 2 * i) / 8;
+                const distance = 30 + Math.random() * 20;
+                particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            direction = {x: 0, y: 0};
+            swipeDirection = {x: 0, y: 0};
+            isSwiping = false;
+            if (shrinkTimer) {
+                clearTimeout(shrinkTimer);
+            }
+            if (moveInterval) {
+                clearInterval(moveInterval);
+            }
+            
+            // Hide swipe indicator
+            document.getElementById('swipeIndicator').classList.remove('active');
+            
+            playGameOverSound();
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = '#FFF5E6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid pattern
+            ctx.strokeStyle = 'rgba(45, 64, 89, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+
+            // Draw food with glow
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#FFD700';
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Draw snake
+            snake.forEach((segment, index) => {
+                const color = snakeColors[index] || snakeColors[snakeColors.length - 1];
+                
+                // Snake segment with gradient
+                const gradient = ctx.createRadialGradient(
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    0,
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    gridSize / 2
+                );
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, shadeColor(color, -20));
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    gridSize / 2 - 1,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+
+                // Eyes on head
+                if (index === 0) {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(segment.x * gridSize + gridSize / 2 - 4, segment.y * gridSize + gridSize / 2 - 3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(segment.x * gridSize + gridSize / 2 + 4, segment.y * gridSize + gridSize / 2 - 3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(segment.x * gridSize + gridSize / 2 - 4, segment.y * gridSize + gridSize / 2 - 3, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(segment.x * gridSize + gridSize / 2 + 4, segment.y * gridSize + gridSize / 2 - 3, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+        }
+
+        // Initial draw
+        drawGame();
+    </script>
+</body>
+</html>
